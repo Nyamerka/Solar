@@ -20,6 +20,13 @@ public class UIController : MonoBehaviour
     [Header("Burst Cooldown")]
     [SerializeField] private Image burstCooldownIcon;
 
+    [Header("Upgrades")]
+    [SerializeField] private GameObject upgradesPanel;
+    [SerializeField] private TextMeshProUGUI upgradeRangeText;
+    [SerializeField] private TextMeshProUGUI upgradeDurationText;
+    [SerializeField] private Image upgradeRangeIcon;
+    [SerializeField] private Image upgradeDurationIcon;
+
     [Header("Overlays")]
     [SerializeField] private GameObject winPanel;
     [SerializeField] private GameObject losePanel;
@@ -71,6 +78,7 @@ public class UIController : MonoBehaviour
     private void Update()
     {
         UpdateBurstCooldown();
+        UpdateUpgrades();
     }
 
     private void SetupButtons()
@@ -151,6 +159,34 @@ public class UIController : MonoBehaviour
     {
         if (burstCooldownIcon == null || flashlight == null) return;
         burstCooldownIcon.fillAmount = flashlight.BurstCooldownNormalized;
+    }
+
+    private void UpdateUpgrades()
+    {
+        if (PlayerUpgrades.Instance == null) return;
+
+        float rangeBonus = PlayerUpgrades.Instance.FlashRangeBonus;
+        float durationBonus = PlayerUpgrades.Instance.FlashDurationBonus;
+
+        bool hasAny = rangeBonus > 0f || durationBonus > 0f;
+        if (upgradesPanel != null && upgradesPanel.activeSelf != hasAny)
+            upgradesPanel.SetActive(hasAny);
+
+        if (upgradeRangeText != null)
+        {
+            upgradeRangeText.text = $"+{rangeBonus:0.#}";
+            upgradeRangeText.gameObject.SetActive(rangeBonus > 0f);
+        }
+        if (upgradeRangeIcon != null)
+            upgradeRangeIcon.gameObject.SetActive(rangeBonus > 0f);
+
+        if (upgradeDurationText != null)
+        {
+            upgradeDurationText.text = $"+{durationBonus:0.#}с";
+            upgradeDurationText.gameObject.SetActive(durationBonus > 0f);
+        }
+        if (upgradeDurationIcon != null)
+            upgradeDurationIcon.gameObject.SetActive(durationBonus > 0f);
     }
 
     private void ShowWinScreen()

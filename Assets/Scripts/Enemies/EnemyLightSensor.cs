@@ -3,10 +3,17 @@ using UnityEngine;
 public class EnemyLightSensor : MonoBehaviour
 {
     private EnemyAI ai;
+    private Transform playerTransform;
 
     private void Awake()
     {
         ai = GetComponent<EnemyAI>();
+    }
+
+    private void Start()
+    {
+        var player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null) playerTransform = player.transform;
     }
 
     public void OnLightDetected(LightAttackType attackType)
@@ -20,18 +27,9 @@ public class EnemyLightSensor : MonoBehaviour
                     ai.AlertToPlayer();
                 break;
 
-            case EnemyType.Sentry:
-                // Sentry doesn't react behaviorally to light, only takes damage
-                break;
-
-            case EnemyType.Wraith:
-                // Wraith becomes visible (handled by EnemyLightVisibility) — no behavior change from light
-                break;
-
             case EnemyType.Lurker:
-                var playerObj = GameObject.FindGameObjectWithTag("Player");
-                if (playerObj != null)
-                    ai.Flee(playerObj.transform.position);
+                if (playerTransform != null)
+                    ai.Flee(playerTransform.position);
                 break;
         }
     }

@@ -10,20 +10,17 @@ public class MenuController : MonoBehaviour
 
     private void Start()
     {
-        if (GameManager.Instance == null)
-        {
-            var go = new GameObject("GameManager");
-            go.AddComponent<GameManager>();
-        }
-
         level1Button.onClick.AddListener(() => GameManager.Instance.LoadLevel(1));
         level2Button.onClick.AddListener(() => GameManager.Instance.LoadLevel(2));
         if (level3Button != null)
             level3Button.onClick.AddListener(() => GameManager.Instance.LoadLevel(3));
         quitButton.onClick.AddListener(() => GameManager.Instance.QuitGame());
 
-        level2Button.interactable = GameManager.Instance.UnlockedLevels >= 2;
-        if (level3Button != null)
-            level3Button.interactable = GameManager.Instance.UnlockedLevels >= 3;
+        if (GameManager.Instance != null)
+        {
+            level2Button.interactable = GameManager.Instance.UnlockedLevels >= 2;
+            if (level3Button != null)
+                level3Button.interactable = GameManager.Instance.UnlockedLevels >= 3;
+        }
     }
 }

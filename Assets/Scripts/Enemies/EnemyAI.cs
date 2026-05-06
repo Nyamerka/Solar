@@ -48,6 +48,8 @@ public class EnemyAI : MonoBehaviour
 
     public EnemyState CurrentState { get; private set; } = EnemyState.Patrol;
     public EnemyType Type => enemyType;
+    public float StunTimeRemaining => CurrentState == EnemyState.Stunned ? stateTimer : 0f;
+    public float StunDurationTotal { get; private set; }
 
     public event Action OnDied;
 
@@ -239,6 +241,7 @@ public class EnemyAI : MonoBehaviour
     {
         if (isDead) return;
         stateTimer = duration;
+        StunDurationTotal = duration;
         TransitionTo(EnemyState.Stunned);
     }
 

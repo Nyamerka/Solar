@@ -46,6 +46,9 @@ public class Flashlight : MonoBehaviour
     private float baseRange;
     private float baseDuration;
 
+    private GameObject burstRadiusIndicator;
+    private Material burstIndicatorMaterial;
+
     private void Awake()
     {
         inputActions = new PlayerInputActions();
@@ -82,6 +85,8 @@ public class Flashlight : MonoBehaviour
 
         baseRange = detectionRange;
         baseDuration = flashDuration;
+
+        CreateBurstRadiusIndicator();
     }
 
     private void OnEnable()
@@ -109,6 +114,8 @@ public class Flashlight : MonoBehaviour
 
         if (isBeamActive && !isFlashing)
             BeamUpdate();
+
+        UpdateBurstRadiusIndicator();
     }
 
     private void ApplyUpgrades()
@@ -300,18 +307,75 @@ public class Flashlight : MonoBehaviour
         }
     }
 
-    private static List<EnemyLightHealth> FindEnemiesInRange(Vector3 origin, float range)
+    private List<EnemyLightHealth> FindEnemiesInRange(Vector3 origin, float range)
     {
         var result = new List<EnemyLightHealth>();
-        var allEnemies = Object.FindObjectsOfType<EnemyLightHealth>();
-        float rangeSq = range * range;
-        foreach (var e in allEnemies)
+        Collider[] hits = Physics.OverlapSphere(origin, range, enemyLayer);
+        foreach (var hit in hits)
         {
-            if (e.IsDead) continue;
-            if ((e.transform.position - origin).sqrMagnitude <= rangeSq)
-                result.Add(e);
+            var elh = hit.GetComponent<EnemyLightHealth>();
+            if (elh == null || elh.IsDead) continue;
+            result.Add(elh);
         }
         return result;
+    }
+
+    private void CreateBurstRadiusIndicator()
+    {
+        burstRadiusIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        burstRadiusIndicator.name = "BurstRadiusIndicator";
+        burstRadiusIndicator.transform.SetParent(transform.root);
+        burstRadiusIndicator.transform.localPosition = new Vector3(0, 0.02f, 0);
+
+        Destroy(burstRadiusIndicator.GetComponent<Collider>());
+
+        var shader = Shader.Find("Universal Render Pipeline/Unlit")
+                  ?? Shader.Find("Unlit/Color");
+        burstIndicatorMaterial = new Material(shader);
+        burstIndicatorMaterial.color = new Color(1f, 0.85f, 0.3f, 0.15f);
+
+        SetTransparent(burstIndicatorMaterial);
+
+        burstRadiusIndicator.GetComponent<Renderer>().material = burstIndicatorMaterial;
+        burstRadiusIndicator.GetComponent<Renderer>().shadowCastingMode =
+            UnityEngine.Rendering.ShadowCastingMode.Off;
+
+        burstRadiusIndicator.SetActive(false);
+    }
+
+    private void SetTransparent(Material mat)
+    {
+        mat.SetFloat("_Surface", 1f);
+        mat.SetFloat("_Blend", 0f);
+        mat.SetOverrideTag("RenderType", "Transparent");
+        mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        mat.SetInt("_ZWrite", 0);
+        mat.DisableKeyword("_ALPHATEST_ON");
+        mat.EnableKeyword("_ALPHABLEND_ON");
+        mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        mat.renderQueue = 3000;
+    }
+
+    private void UpdateBurstRadiusIndicator()
+    {
+        if (burstRadiusIndicator == null) return;
+
+        bool burstReady = burstCooldownTimer <= 0
+                       && energy != null && energy.HasEnough(burstCost);
+
+        burstRadiusIndicator.SetActive(burstReady);
+
+        if (burstReady)
+        {
+            float diameter = burstRadius * 2f;
+            burstRadiusIndicator.transform.localScale = new Vector3(diameter, 0.01f, diameter);
+            burstRadiusIndicator.transform.position =
+                transform.root.position + new Vector3(0, 0.02f, 0);
+
+            float pulse = 0.1f + Mathf.Sin(Time.time * 3f) * 0.05f;
+            burstIndicatorMaterial.color = new Color(1f, 0.85f, 0.3f, pulse);
+        }
     }
 
     private void RevealHiddenPassages(float radius)
